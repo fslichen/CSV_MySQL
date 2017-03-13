@@ -1,5 +1,6 @@
 package evolution.util;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -10,13 +11,20 @@ import java.util.Properties;
 import java.util.Set;
 
 import evolution.Application;
+import lombok.Data;
 
 public class JDBC {
 	private Connection connection;
 	private Statement statement;
 	private static final Set<String> updateKeyWords = new HashSet<>();
+	private static final Properties properties = new Properties();
 	
-	public JDBC() {
+	@SuppressWarnings("unchecked")
+	public static <T> T getProperty(String key, Class<T> clazz) {
+		return (T) properties.get(key);
+	}
+	
+	static {
 		updateKeyWords.add("delete");
 		updateKeyWords.add("update");
 		updateKeyWords.add("insert");
@@ -25,8 +33,14 @@ public class JDBC {
 		updateKeyWords.add("drop");
 		try {
 			InputStream inputStream = Application.class.getResourceAsStream("/jdbc.properties");
-			Properties properties = new Properties();
 			properties.load(inputStream);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public JDBC() {
+		try {
 			String url = (String) properties.get("url");
 			String username = (String) properties.get("username");
 			String password = (String) properties.get("password");
@@ -85,5 +99,20 @@ public class JDBC {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static Class<?>[] getColumnClasses(String[] columnTypies) {
+		Class<?>[] columnClasses = new Class<?>[columnTypies.length];
+		int length = columnTypies.length;
+		for (int i = 0; i < length; i++) {
+			if ("String".equals(columnTypies[i])) {
+				columnClasses[i] = String.class;
+			} else if ("Double".equals(columnTypies[i])) {
+				columnClasses[i] = Double.class;
+			} else if ("Integer".equals(columnTypies[i])) {
+				columnClasses[i] = Integer.class;
+			}
+		}
+		return columnClasses;
 	}
 }
